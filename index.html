@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AttendAI — Smart Attendance System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --border: #2a2a3d;
+    --accent: #7c6af7;
+    --accent2: #f77c6a;
+    --accent3: #6af7c0;
+    --text: #e8e8f0;
+    --text-muted: #7070a0;
+    --present: #6af7c0;
+    --absent: #f77c6a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .glow-orb {
+    position: fixed;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { background: rgba(124,106,247,0.15); top: -100px; left: -100px; }
+  .orb2 { background: rgba(106,247,192,0.08); bottom: -100px; right: -100px; }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Header */
+  header {
+    padding: 28px 0 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .header-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(106,247,192,0.1);
+    border: 1px solid rgba(106,247,192,0.3);
+    color: var(--accent3);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    background: var(--accent3);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* Main layout */
+  main {
+    padding: 36px 0;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .stat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.total::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .stat-card.present::before { background: linear-gradient(90deg, var(--accent3), transparent); }
+  .stat-card.absent::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .stat-card.total .stat-value { color: var(--text); }
+  .stat-card.present .stat-value { color: var(--accent3); }
+  .stat-card.absent .stat-value { color: var(--accent2); }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  /* Attendance table */
+  .attendance-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .table-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .table-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .reset-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    padding: 12px 24px;
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+
+  td {
+    padding: 16px 24px;
+    font-size: 13px;
+  }
+
+  .student-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .avatar.vismaya { background: rgba(124,106,247,0.2); color: var(--accent); border: 1px solid rgba(124,106,247,0.3); }
+  .avatar.manya { background: rgba(106,247,192,0.2); color: var(--accent3); border: 1px solid rgba(106,247,192,0.3); }
+
+  .student-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .student-id {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .status-badge.present {
+    background: rgba(106,247,192,0.1);
+    border: 1px solid rgba(106,247,192,0.3);
+    color: var(--accent3);
+  }
+
+  .status-badge.absent {
+    background: rgba(247,124,106,0.1);
+    border: 1px solid rgba(247,124,106,0.3);
+    color: var(--accent2);
+  }
+
+  .status-badge::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+  }
+  .status-badge.present::before { background: var(--accent3); }
+  .status-badge.absent::before { background: var(--accent2); }
+
+  .time-cell { color: var(--text-muted); font-size: 12px; }
+
+  /* Camera panel */
+  .camera-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    position: sticky;
+    top: 24px;
+  }
+
+  .camera-header {
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .camera-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .camera-viewport {
+    position: relative;
+    background: #08080d;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .camera-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 40px;
+  }
+
+  .camera-icon {
+    width: 64px; height: 64px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    color: var(--text-muted);
+  }
+
+  .camera-placeholder p { font-size: 12px; line-height: 1.6; }
+
+  #webcam-container {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #webcam-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+
+  /* Scan overlay */
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: none;
+  }
+  .scan-overlay.active { display: block; }
+
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent3), transparent);
+    animation: scanMove 2s linear infinite;
+    box-shadow: 0 0 20px var(--accent3);
+  }
+
+  @keyframes scanMove {
+    0% { top: 0; }
+    100% { top: 100%; }
+  }
+
+  .corner {
+    position: absolute;
+    width: 20px; height: 20px;
+    border-color: var(--accent3);
+    border-style: solid;
+  }
+  .corner.tl { top: 16px; left: 16px; border-width: 2px 0 0 2px; }
+  .corner.tr { top: 16px; right: 16px; border-width: 2px 2px 0 0; }
+  .corner.bl { bottom: 16px; left: 16px; border-width: 0 0 2px 2px; }
+  .corner.br { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; }
+
+  /* Prediction panel */
+  .prediction-area {
+    padding: 18px 22px;
+    border-top: 1px solid var(--border);
+    display: none;
+  }
+  .prediction-area.visible { display: block; }
+
+  .pred-title {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .pred-bar-wrap {
+    margin-bottom: 10px;
+  }
+
+  .pred-bar-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 12px;
+  }
+  .pred-bar-header .name { color: var(--text); }
+  .pred-bar-header .pct { color: var(--text-muted); }
+
+  .pred-track {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .pred-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+  .pred-fill.p0 { background: linear-gradient(90deg, var(--accent), #a090ff); }
+  .pred-fill.p1 { background: linear-gradient(90deg, var(--accent3), #90ffd0); }
+
+  /* Detected banner */
+  .detected-banner {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 12px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+  }
+  .detected-banner.show { display: flex; }
+  .detected-banner.success {
+    background: rgba(106,247,192,0.1);
+    border: 1px solid rgba(106,247,192,0.3);
+    color: var(--accent3);
+  }
+  .detected-banner.warning {
+    background: rgba(247,124,106,0.1);
+    border: 1px solid rgba(247,124,106,0.3);
+    color: var(--accent2);
+  }
+
+  /* Scan button */
+  .scan-btn-wrap {
+    padding: 18px 22px;
+    border-top: 1px solid var(--border);
+  }
+
+  .scan-btn {
+    width: 100%;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scan-btn.start {
+    background: linear-gradient(135deg, var(--accent), #a090ff);
+    color: white;
+    box-shadow: 0 4px 24px rgba(124,106,247,0.4);
+  }
+  .scan-btn.start:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 30px rgba(124,106,247,0.5);
+  }
+  .scan-btn.stop {
+    background: rgba(247,124,106,0.15);
+    border: 1px solid rgba(247,124,106,0.4);
+    color: var(--accent2);
+    box-shadow: none;
+  }
+  .scan-btn.stop:hover { background: rgba(247,124,106,0.25); }
+
+  /* Activity log */
+  .activity-log {
+    margin-top: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .activity-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .activity-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .log-entries {
+    padding: 8px 0;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .log-entries::-webkit-scrollbar { width: 4px; }
+  .log-entries::-webkit-scrollbar-track { background: transparent; }
+  .log-entries::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .log-entry {
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    border-bottom: 1px solid transparent;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .log-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .log-dot.present { background: var(--accent3); }
+  .log-dot.absent { background: var(--accent2); }
+  .log-dot.info { background: var(--accent); }
+
+  .log-msg { color: var(--text); flex: 1; }
+  .log-time { color: var(--text-muted); font-size: 11px; }
+
+  .log-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  /* Model loading overlay */
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,15,0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 10;
+    display: none;
+  }
+  .loading-overlay.active { display: flex; }
+
+  .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text { font-size: 12px; color: var(--text-muted); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 100;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    min-width: 240px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.green { border-color: rgba(106,247,192,0.4); color: var(--accent3); }
+  .toast.orange { border-color: rgba(247,124,106,0.4); color: var(--accent2); }
+  .toast.blue { border-color: rgba(124,106,247,0.4); color: var(--accent); }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    .camera-panel { position: static; }
+    .stats-row { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="glow-orb orb1"></div>
+<div class="glow-orb orb2"></div>
+
+<div class="wrapper">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">👁</div>
+      <div class="logo-text">Attend<span>AI</span></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <div class="header-meta">
+        <div id="current-date"></div>
+        <div id="current-time"></div>
+      </div>
+      <div class="live-badge" id="live-badge" style="display:none;">
+        <div class="live-dot"></div> SCANNING
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="dashboard-left">
+      <div class="section-label">Overview</div>
+
+      <div class="stats-row">
+        <div class="stat-card total">
+          <div class="stat-label">Total Students</div>
+          <div class="stat-value">2</div>
+          <div class="stat-sub">Registered</div>
+        </div>
+        <div class="stat-card present">
+          <div class="stat-label">Present</div>
+          <div class="stat-value" id="present-count">0</div>
+          <div class="stat-sub" id="present-pct">0% attendance</div>
+        </div>
+        <div class="stat-card absent">
+          <div class="stat-label">Absent</div>
+          <div class="stat-value" id="absent-count">2</div>
+          <div class="stat-sub" id="absent-pct">100% absent</div>
+        </div>
+      </div>
+
+      <div class="section-label">Attendance Register</div>
+
+      <div class="attendance-table-wrap">
+        <div class="table-header">
+          <div class="table-title">Today's Attendance</div>
+          <button class="reset-btn" onclick="resetAttendance()">↺ Reset</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Status</th>
+              <th>Marked At</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody id="attendance-tbody">
+            <tr id="row-Vismaya">
+              <td>
+                <div class="student-cell">
+                  <div class="avatar vismaya">V</div>
+                  <div>
+                    <div class="student-name">Vismaya</div>
+                    <div class="student-id">STU-001</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="status-badge absent" id="status-Vismaya">Absent</span></td>
+              <td class="time-cell" id="time-Vismaya">—</td>
+              <td class="time-cell" id="conf-Vismaya">—</td>
+            </tr>
+            <tr id="row-Manya">
+              <td>
+                <div class="student-cell">
+                  <div class="avatar manya">M</div>
+                  <div>
+                    <div class="student-name">Manya</div>
+                    <div class="student-id">STU-002</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="status-badge absent" id="status-Manya">Absent</span></td>
+              <td class="time-cell" id="time-Manya">—</td>
+              <td class="time-cell" id="conf-Manya">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="activity-log">
+        <div class="activity-header">
+          <div class="activity-title">Activity Log</div>
+          <span style="font-size:11px; color:var(--text-muted);" id="log-count">0 events</span>
+        </div>
+        <div class="log-entries" id="log-entries">
+          <div class="log-empty" id="log-empty">No activity yet. Start scanning to mark attendance.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Camera Panel -->
+    <div class="camera-panel">
+      <div class="camera-header">
+        <div class="camera-title">Face Scanner</div>
+        <span style="font-size:11px; color:var(--text-muted);">ML Model Ready</span>
+      </div>
+
+      <div class="camera-viewport" id="camera-viewport">
+        <div class="camera-placeholder" id="cam-placeholder">
+          <div class="camera-icon">📷</div>
+          <p>Camera inactive.<br>Click <strong style="color:var(--accent)">Start Scan</strong><br>to begin face detection.</p>
+        </div>
+        <div id="webcam-container"></div>
+
+        <div class="scan-overlay" id="scan-overlay">
+          <div class="scan-line"></div>
+          <div class="corner tl"></div>
+          <div class="corner tr"></div>
+          <div class="corner bl"></div>
+          <div class="corner br"></div>
+        </div>
+
+        <div class="loading-overlay" id="loading-overlay">
+          <div class="spinner"></div>
+          <div class="loading-text">Loading model & camera...</div>
+        </div>
+      </div>
+
+      <div class="prediction-area" id="prediction-area">
+        <div class="pred-title">Detection Confidence</div>
+        <div id="label-container"></div>
+        <div class="detected-banner" id="detected-banner"></div>
+      </div>
+
+      <div class="scan-btn-wrap">
+        <button class="scan-btn start" id="scan-btn" onclick="toggleScan()">
+          <span>▶</span> Start Scan
+        </button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const MODEL_URL = "./my_model/";
+  let model, webcam, maxPredictions;
+  let isRunning = false;
+  let animationId;
+  let attendance = { Vismaya: false, Manya: false };
+  let detectionBuffer = {};
+  const CONFIDENCE_THRESHOLD = 0.75;
+  const DETECTION_FRAMES = 8; // consecutive frames before marking
+  let logCount = 0;
+
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('current-date').textContent = now.toLocaleDateString('en-IN', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+    document.getElementById('current-time').textContent = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  async function toggleScan() {
+    if (!isRunning) {
+      await startScan();
+    } else {
+      stopScan();
+    }
+  }
+
+  async function startScan() {
+    const loadingEl = document.getElementById('loading-overlay');
+    loadingEl.classList.add('active');
+    
+    try {
+      if (!model) {
+        const modelURL = MODEL_URL + "model.json";
+        const metadataURL = MODEL_URL + "metadata.json";
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+      }
+
+      webcam = new tmImage.Webcam(380, 380, true);
+      await webcam.setup();
+      await webcam.play();
+
+      document.getElementById('cam-placeholder').style.display = 'none';
+      document.getElementById('webcam-container').appendChild(webcam.canvas);
+
+      // Build prediction bars
+      const labelContainer = document.getElementById('label-container');
+      labelContainer.innerHTML = '';
+      for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.innerHTML += `
+          <div class="pred-bar-wrap">
+            <div class="pred-bar-header">
+              <span class="name" id="pred-name-${i}">—</span>
+              <span class="pct" id="pred-pct-${i}">0%</span>
+            </div>
+            <div class="pred-track">
+              <div class="pred-fill p${i}" id="pred-fill-${i}"></div>
+            </div>
+          </div>`;
+      }
+
+      document.getElementById('prediction-area').classList.add('visible');
+      document.getElementById('scan-overlay').classList.add('active');
+      document.getElementById('live-badge').style.display = 'flex';
+      document.getElementById('scan-btn').className = 'scan-btn stop';
+      document.getElementById('scan-btn').innerHTML = '<span>■</span> Stop Scan';
+
+      isRunning = true;
+      addLog('info', 'Camera started — scanning for faces...');
+      showToast('🎥 Scanning started', 'blue');
+      loop();
+
+    } catch (err) {
+      console.error(err);
+      showToast('⚠ Could not load camera or model', 'orange');
+      addLog('absent', 'Error: ' + err.message);
+    } finally {
+      loadingEl.classList.remove('active');
+    }
+  }
+
+  function stopScan() {
+    isRunning = false;
+    if (animationId) cancelAnimationFrame(animationId);
+    if (webcam) { webcam.stop(); webcam = null; }
+    document.getElementById('webcam-container').innerHTML = '';
+    document.getElementById('cam-placeholder').style.display = 'flex';
+    document.getElementById('scan-overlay').classList.remove('active');
+    document.getElementById('live-badge').style.display = 'none';
+    document.getElementById('scan-btn').className = 'scan-btn start';
+    document.getElementById('scan-btn').innerHTML = '<span>▶</span> Start Scan';
+    document.getElementById('detected-banner').classList.remove('show');
+    detectionBuffer = {};
+    showToast('⏹ Scanning stopped', 'blue');
+    addLog('info', 'Camera stopped');
+  }
+
+  async function loop() {
+    if (!isRunning) return;
+    webcam.update();
+    await predict();
+    animationId = requestAnimationFrame(loop);
+  }
+
+  async function predict() {
+    const prediction = await model.predict(webcam.canvas);
+    let topClass = null;
+    let topProb = 0;
+
+    for (let i = 0; i < maxPredictions; i++) {
+      const name = prediction[i].className;
+      const prob = prediction[i].probability;
+      const pct = Math.round(prob * 100);
+
+      document.getElementById(`pred-name-${i}`).textContent = name;
+      document.getElementById(`pred-pct-${i}`).textContent = pct + '%';
+      document.getElementById(`pred-fill-${i}`).style.width = pct + '%';
+
+      if (prob > topProb) { topProb = prob; topClass = name; }
+    }
+
+    const banner = document.getElementById('detected-banner');
+
+    if (topProb >= CONFIDENCE_THRESHOLD) {
+      banner.className = 'detected-banner show success';
+      banner.innerHTML = `✓ Detected: <strong>${topClass}</strong> (${Math.round(topProb*100)}%)`;
+
+      // Buffer-based marking
+      if (!detectionBuffer[topClass]) detectionBuffer[topClass] = 0;
+      detectionBuffer[topClass]++;
+
+      // Reset others
+      for (const k in detectionBuffer) {
+        if (k !== topClass) detectionBuffer[k] = 0;
+      }
+
+      if (detectionBuffer[topClass] >= DETECTION_FRAMES && !attendance[topClass]) {
+        markAttendance(topClass, topProb);
+      }
+    } else {
+      if (topProb < 0.4) {
+        banner.className = 'detected-banner show warning';
+        banner.innerHTML = '⚠ No face clearly detected';
+      } else {
+        banner.className = 'detected-banner show warning';
+        banner.innerHTML = `Detecting… <strong>${topClass}</strong> (${Math.round(topProb*100)}%)`;
+      }
+      detectionBuffer = {};
+    }
+  }
+
+  function markAttendance(name, confidence) {
+    if (attendance[name]) return;
+    attendance[name] = true;
+    detectionBuffer[name] = 0; // reset so it won't re-trigger
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    const confStr = Math.round(confidence * 100) + '%';
+
+    // Update table
+    const statusEl = document.getElementById(`status-${name}`);
+    statusEl.className = 'status-badge present';
+    statusEl.textContent = 'Present';
+    document.getElementById(`time-${name}`).textContent = timeStr;
+    document.getElementById(`conf-${name}`).textContent = confStr;
+
+    // Update stats
+    updateStats();
+
+    // Log
+    addLog('present', `${name} marked Present — ${confStr} confidence`);
+    showToast(`✓ ${name} marked Present!`, 'green');
+
+    // Highlight row
+    const row = document.getElementById(`row-${name}`);
+    row.style.background = 'rgba(106,247,192,0.05)';
+    setTimeout(() => row.style.background = '', 3000);
+  }
+
+  function updateStats() {
+    const presentCount = Object.values(attendance).filter(Boolean).length;
+    const absentCount = 2 - presentCount;
+    document.getElementById('present-count').textContent = presentCount;
+    document.getElementById('absent-count').textContent = absentCount;
+    document.getElementById('present-pct').textContent = Math.round((presentCount/2)*100) + '% attendance';
+    document.getElementById('absent-pct').textContent = Math.round((absentCount/2)*100) + '% absent';
+  }
+
+  function resetAttendance() {
+    attendance = { Vismaya: false, Manya: false };
+    detectionBuffer = {};
+
+    ['Vismaya','Manya'].forEach(name => {
+      document.getElementById(`status-${name}`).className = 'status-badge absent';
+      document.getElementById(`status-${name}`).textContent = 'Absent';
+      document.getElementById(`time-${name}`).textContent = '—';
+      document.getElementById(`conf-${name}`).textContent = '—';
+      document.getElementById(`row-${name}`).style.background = '';
+    });
+
+    updateStats();
+    addLog('info', 'Attendance reset for the day');
+    showToast('↺ Attendance reset', 'blue');
+  }
+
+  function addLog(type, msg) {
+    const empty = document.getElementById('log-empty');
+    if (empty) empty.remove();
+
+    logCount++;
+    document.getElementById('log-count').textContent = logCount + ' event' + (logCount !== 1 ? 's' : '');
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    const entries = document.getElementById('log-entries');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `<div class="log-dot ${type}"></div><div class="log-msg">${msg}</div><div class="log-time">${timeStr}</div>`;
+    entries.insertBefore(entry, entries.firstChild);
+
+    // Keep only 20 entries
+    const all = entries.querySelectorAll('.log-entry');
+    if (all.length > 20) all[all.length-1].remove();
+  }
+
+  let toastTimer;
+  function showToast(msg, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = `toast show ${type}`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>

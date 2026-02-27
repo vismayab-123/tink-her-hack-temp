@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Model Diagnostics</title>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<style>
+  body { font-family: monospace; background: #0a0a0f; color: #e8e8f0; padding: 30px; }
+  h2 { color: #7c6af7; margin-bottom: 20px; }
+  .check { padding: 10px 16px; margin: 8px 0; border-radius: 8px; font-size: 13px; }
+  .ok   { background: rgba(106,247,192,0.1); border: 1px solid rgba(106,247,192,0.3); color: #6af7c0; }
+  .fail { background: rgba(247,124,106,0.1); border: 1px solid rgba(247,124,106,0.3); color: #f77c6a; }
+  .info { background: rgba(124,106,247,0.1); border: 1px solid rgba(124,106,247,0.3); color: #a090ff; }
+  pre  { background: #13131a; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 12px; color: #7070a0; margin-top: 20px; }
+  button { background: #7c6af7; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-family: monospace; font-size: 14px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<h2>🔍 AttendAI — Model Diagnostics</h2>
+<div id="log"></div>
+<button onclick="runDiagnostics()">▶ Run Diagnostics</button>
+<pre id="raw"></pre>
+
+<script>
+function log(msg, type='info') {
+  const d = document.createElement('div');
+  d.className = 'check ' + type;
+  d.textContent = msg;
+  document.getElementById('log').appendChild(d);
+}
+
+async function runDiagnostics() {
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('raw').textContent = '';
+
+  // 1. Check model.json
+  log('Checking /static/my_model/model.json ...', 'info');
+  try {
+    const r = await fetch('/static/my_model/model.json');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const json = await r.json();
+    log(`✓ model.json loaded — format: "${json.format || 'unknown'}", weightsManifest entries: ${json.weightsManifest?.length ?? 0}`, 'ok');
+    document.getElementById('raw').textContent = JSON.stringify(json, null, 2).slice(0, 2000);
+
+    // 2. Check each weights file listed in manifest
+    if (json.weightsManifest) {
+      for (const group of json.weightsManifest) {
+        for (const path of group.paths) {
+          log(`Checking weights file: ${path} ...`, 'info');
+          try {
+            const wr = await fetch('/static/my_model/' + path);
+            if (!wr.ok) throw new Error(`HTTP ${wr.status}`);
+            const buf = await wr.arrayBuffer();
+            const byteLen = buf.byteLength;
+            const aligned = byteLen % 4 === 0;
+            if (aligned) {
+              log(`✓ ${path} — ${byteLen} bytes (aligned ✓)`, 'ok');
+            } else {
+              log(`✗ ${path} — ${byteLen} bytes — NOT 4-byte aligned! This is the bug.`, 'fail');
+              log(`  → File is likely truncated or corrupted. Re-download from Teachable Machine.`, 'fail');
+            }
+          } catch(e) {
+            log(`✗ ${path} — ${e.message}`, 'fail');
+          }
+        }
+      }
+    }
+  } catch(e) {
+    log(`✗ model.json — ${e.message}`, 'fail');
+  }
+
+  // 3. Check metadata.json
+  log('Checking /static/my_model/metadata.json ...', 'info');
+  try {
+    const r = await fetch('/static/my_model/metadata.json');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const json = await r.json();
+    log(`✓ metadata.json loaded — classes: ${JSON.stringify(json.labels)}`, 'ok');
+  } catch(e) {
+    log(`✗ metadata.json — ${e.message}`, 'fail');
+  }
+
+  // 4. Try full model load
+  log('Attempting full tmImage.load() ...', 'info');
+  try {
+    const model = await tmImage.load('/static/my_model/model.json', '/static/my_model/metadata.json');
+    log(`✓ Model loaded successfully! Classes: ${model.getTotalClasses()}`, 'ok');
+  } catch(e) {
+    log(`✗ tmImage.load() failed — ${e.message}`, 'fail');
+    log('  → See fix instructions below.', 'fail');
+  }
+}
+</script>
+</body>
+</html>
