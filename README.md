@@ -2,29 +2,29 @@
   <img src="./img.png" alt="Project Banner" width="100%">
 </p>
 
-# [Project Name] 🎯
+AI Based Attendance Manegment System 🎯
 
 ## Basic Details
 
-### Team Name: [Name]
+### Team Name:Intellecta
 
 ### Team Members
-- Member 1: [Punnya Sudarsan] - [Ahalia school of engineering and technology]
-- Member 2: [Vismaya B] - [[Ahalia school of engineering and technology]
+- Member 1: Punnya Sudarsan - Ahalia school of engineering and technology
+- Member 2:Vismaya B - Ahalia school of engineering and technology
 
 ### Hosted Project Link
 [mention your project hosted link here]
 
 ### Project Description
-[The AI-Based Attendance Management System uses facial recognition technology to automatically record student attendance. The system captures images through a camera, detects and recognizes faces using AI algorithms, and matches them with a stored database to mark attendance accurately.
+The AI-Based Attendance Management System uses facial recognition technology to automatically record student attendance. The system captures images through a camera, detects and recognizes faces using AI algorithms, and matches them with a stored database to mark attendance accurately.
 
-It reduces manual effort, prevents proxy attendance, and stores records digitally for easy monitoring and analysis. This smart solution improves efficiency, accuracy, and transparency in educational institutions.]
+It reduces manual effort, prevents proxy attendance, and stores records digitally for easy monitoring and analysis. This smart solution improves efficiency, accuracy, and transparency in educational institutions.
 
 ### The Problem statement
-[Proxy and time consuming attendance system ]
+Proxy and time consuming attendance system 
 
 ### The Solution
-[Ai Based Attendance Management System]
+Ai Based Attendance Management System
 
 ---
 
@@ -169,12 +169,13 @@ List the key features of your project:
 
 #### Screenshots (Add at least 3)
 
-![Screenshot1](Add screenshot 1 here with proper name)
-*Add caption explaining what this shows*
+![Screenshot1]<img width="1814" height="878" alt="Screenshot 2026-02-28 013622" src="https://github.com/user-attachments/assets/a136364f-ac48-4aec-9230-f33ee984b3ec" />
 
-![Screenshot2](Add screenshot 2 here with proper name)
-*Add caption explaining what this shows*
+This is the homepage of the attendance manegement system.in this already two students facial recognition has been stored
 
+![Screenshot2]<img width="1904" height="932" alt="Screenshot 2026-02-28 014616" src="https://github.com/user-attachments/assets/bee6cef2-793e-4444-8365-5715787c6e0b" />
+
+here vismaya's face has been detected by the camera and marked as present and manya haven't attented the class so she is marked as absent 
 ![Screenshot3](Add screenshot 3 here with proper name)
 *Add caption explaining what this shows*
 
@@ -188,7 +189,7 @@ List the key features of your project:
 **Application Workflow:**
 
 ![Workflow](docs/workflow.png)
-*Add caption explaining your workflow*
+The front page is stored with students previously stored facial recogonised data,it also includes the data of total number of students,number of students present and absent and also a webcam scanner is ready to detect the students---->Those students who attended the class is detected through the webcam ---->the detected images of the students are compared with their stored data---->if the student's data  matches with the stored data it will be marked as present or else absent 
 
 ---
 
