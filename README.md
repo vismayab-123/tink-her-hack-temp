@@ -9,20 +9,22 @@
 ### Team Name: [Name]
 
 ### Team Members
-- Member 1: [Name] - [College]
-- Member 2: [Name] - [College]
+- Member 1: [Punnya Sudarsan] - [Ahalia school of engineering and technology]
+- Member 2: [Vismaya B] - [[Ahalia school of engineering and technology]
 
 ### Hosted Project Link
 [mention your project hosted link here]
 
 ### Project Description
-[2-3 lines about what your project does]
+[The AI-Based Attendance Management System uses facial recognition technology to automatically record student attendance. The system captures images through a camera, detects and recognizes faces using AI algorithms, and matches them with a stored database to mark attendance accurately.
+
+It reduces manual effort, prevents proxy attendance, and stores records digitally for easy monitoring and analysis. This smart solution improves efficiency, accuracy, and transparency in educational institutions.]
 
 ### The Problem statement
-[What problem are you solving?]
+[Proxy and time consuming attendance system ]
 
 ### The Solution
-[How are you solving it?]
+[Ai Based Attendance Management System]
 
 ---
 
@@ -31,10 +33,94 @@
 ### Technologies/Components Used
 
 **For Software:**
-- Languages used: [e.g., JavaScript, Python, Java]
-- Frameworks used: [e.g., React, Django, Spring Boot]
-- Libraries used: [e.g., axios, pandas, JUnit]
-- Tools used: [e.g., VS Code, Git, Docker]
+- Languages used: [html,css,javascript,python,teachable machines]
+- Frameworks used: [flask,machine learning]
+- Libraries used: [absl-py==2.4.0
+astunparse==1.6.3
+beautifulsoup4==4.14.3
+blinker==1.9.0
+certifi==2026.2.25
+cffi==2.0.0
+charset-normalizer==3.4.4
+click==8.3.1
+colorama==0.4.6
+cryptography==46.0.5
+deepface==0.0.79
+face-recognition-models==0.3.0
+filelock==3.24.3
+fire==0.7.1
+Flask==3.1.3
+flask-cors==6.0.2
+Flask-SQLAlchemy==3.1.1
+flatbuffers==25.12.19
+gast==0.7.0
+gdown==5.2.1
+google-auth==2.48.0
+google-auth-oauthlib==1.3.0
+google-pasta==0.2.0
+greenlet==3.3.2
+grpcio==1.78.0
+gunicorn==25.1.0
+h5py==3.15.1
+idna==3.11
+itsdangerous==2.2.0
+Jinja2==3.1.6
+joblib==1.5.3
+keras==2.15.0
+libclang==18.1.1
+lightdsa==0.0.3
+lightecc==0.0.4
+lightphe==0.0.20
+lz4==4.4.5
+Markdown==3.10.2
+markdown-it-py==4.0.0
+MarkupSafe==3.0.3
+mdurl==0.1.2
+ml-dtypes==0.2.0
+mpmath==1.3.0
+mtcnn==1.0.0
+namex==0.1.0
+numpy==1.26.4
+oauthlib==3.3.1
+opencv-python==4.8.1.78
+opt_einsum==3.4.0
+optree==0.19.0
+packaging==26.0
+pandas==2.3.3
+pillow==12.1.1
+protobuf==4.25.8
+pyasn1==0.6.2
+pyasn1_modules==0.4.2
+pycparser==3.0
+Pygments==2.19.2
+PySocks==1.7.1
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.1
+pytz==2025.2
+requests==2.32.5
+requests-oauthlib==2.0.0
+retina-face==0.0.17
+rich==14.3.3
+rsa==4.9.1
+six==1.17.0
+soupsieve==2.8.3
+SQLAlchemy==2.0.47
+sympy==1.14.0
+tensorboard==2.15.2
+tensorboard-data-server==0.7.2
+tensorflow==2.15.0
+tensorflow-estimator==2.15.0
+tensorflow-intel==2.15.0
+tensorflow-io-gcs-filesystem==0.31.0
+termcolor==3.3.0
+tqdm==4.67.3
+typing_extensions==4.15.0
+tzdata==2025.3
+urllib3==2.6.3
+Werkzeug==3.1.6
+wrapt==1.14.2
+]
+- Tools used: [VS Code]
 
 **For Hardware:**
 - Main components: [List main components]
@@ -46,10 +132,10 @@
 ## Features
 
 List the key features of your project:
-- Feature 1: [Description]
-- Feature 2: [Description]
-- Feature 3: [Description]
-- Feature 4: [Description]
+- Feature 1: [Face Detection & Recognition – Automatically detects and identifies students using AI-based facial recognition.]
+- Feature 2: [Real-Time Attendance Marking – Captures faces through a camera and marks attendance instantly.]
+- Feature 3: [Automated Hourly Verification – Re-checks student presence at scheduled intervals]
+- Feature 4: [Prevents Proxy Attendance – Eliminates fake or manual attendance marking.]
 
 ---
 
@@ -361,7 +447,7 @@ python script.py -v --format json data.json
 ## Project Demo
 
 ### Video
-[Add your demo video link here - YouTube, Google Drive, etc.]
+https://drive.google.com/file/d/1xT1QEqQS4DB2E1OuimjSz_9P4Kt3mW_W/view?usp=sharing
 
 *Explain what the video demonstrates - key features, user flow, technical highlights*
 
