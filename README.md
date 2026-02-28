@@ -13,7 +13,7 @@ AI Based Attendance Manegment System 🎯
 - Member 2:Vismaya B - Ahalia school of engineering and technology
 
 ### Hosted Project Link
-[mention your project hosted link here]
+https://tink-her-hack-temp-206x.onrender.com
 
 ### Project Description
 The AI-Based Attendance Management System uses facial recognition technology to automatically record student attendance. The system captures images through a camera, detects and recognizes faces using AI algorithms, and matches them with a stored database to mark attendance accurately.
