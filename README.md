@@ -176,8 +176,9 @@ This is the homepage of the attendance manegement system.in this already two stu
 ![Screenshot2]<img width="1904" height="932" alt="Screenshot 2026-02-28 014616" src="https://github.com/user-attachments/assets/bee6cef2-793e-4444-8365-5715787c6e0b" />
 
 here vismaya's face has been detected by the camera and marked as present and manya haven't attented the class so she is marked as absent 
-![Screenshot3](Add screenshot 3 here with proper name)
-*Add caption explaining what this shows*
+![Screenshot3]<img width="1890" height="927" alt="Screenshot 2026-02-28 021512" src="https://github.com/user-attachments/assets/5d370fe3-3bd7-4b82-8598-b3dc1e54763c" />
+
+here both manya and vismaya's face have been detected so both of them are present in the class
 
 #### Diagrams
 
